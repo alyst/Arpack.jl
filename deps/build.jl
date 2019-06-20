@@ -2,7 +2,7 @@ using BinaryProvider # requires BinaryProvider 0.3.0 or later
 
 # Parse some basic command-line arguments
 const verbose = "--verbose" in ARGS
-const prefix = Prefix(get([a for a in ARGS if a != "--verbose"], 1, joinpath(@__DIR__, "usr")))
+const prefix = Prefix("/usr")#Prefix(get([a for a in ARGS if a != "--verbose"], 1, joinpath(@__DIR__, "usr")))
 products = [
     LibraryProduct(prefix, ["libarpack"], :libarpack),
 ]
@@ -55,8 +55,8 @@ download_info = Dict(
 
 # Install unsatisfied or updated dependencies:
 unsatisfied = any(!satisfied(p; verbose=verbose) for p in products)
-dl_info = choose_download(download_info, platform_key_abi())
-if dl_info === nothing && unsatisfied
+dl_info = unsatisfied ? choose_download(download_info, platform_key_abi()) : nothing
+if unsatisfied && dl_info === nothing
     # If we don't have a compatible .tar.gz to download, complain.
     # Alternatively, you could attempt to install from a separate provider,
     # build from source or something even more ambitious here.
@@ -65,7 +65,7 @@ end
 
 # If we have a download, and we are unsatisfied (or the version we're
 # trying to install is not itself installed) then load it up!
-if unsatisfied || !isinstalled(dl_info...; prefix=prefix)
+if unsatisfied || dl_info !== nothing && !isinstalled(dl_info...; prefix=prefix)
     # Download and install binaries
     install(dl_info...; prefix=prefix, force=true, verbose=verbose)
 end
